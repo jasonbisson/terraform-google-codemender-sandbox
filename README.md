@@ -1,37 +1,23 @@
-# cm-gke-as
 # Codemender GKE Agent Sandbox
 
-This repository provides a minimal, secure implementation for running the Google Cloud Codemender client (CMOC) in a highly isolated environment using Google Kubernetes Engine (GKE) Agent Sandbox.
+The foundation of this repository comes from Daniel Lee's repo(https://github.com/thepawn1/cm-gke-as) the moves to the next level of isolation when executing the Codemender binary in a Google Kubernetes Engine (GKE) Agent Sandbox. This sandbox architecture moves into the walk phase of isolating the Codemender service to safely detect vunerabilities in applications. If you want to start crawl phase repo using Google Compute Engine(https://github.com/jasonbisson/terraform-google-codemender) is straighforward and quick to ramp on the basics of the Codemender service.
 
-## Architecture
+## Features
 
-The sandbox uses GKE Autopilot with the Agent Sandbox (gVisor) feature enabled. Network traffic is isolated using a private VPC and Private Google Access for Google APIs.
+- GKE Autopilot with Agent Sandbox (gVisor feature enabled) for vunerability remediation 
+- Private VPC and Private Google Access for Google APIs
+- Custom controller for lifecycle management of sandbox instances. 
+- Google Cloud Storage Fuse mount point for application and report sharing   
+- Optional VPCSC Perimeter for advanced users. 
 
-Here a custom controller to manage the lifecycle of the sandbox instances.  A sanbox CRD is the primary resource that represents a single, stateful Pod.  It manages the hostnames, identity and persistent storage.  A planned enhancement will add a sandbox router to provide stable endpoints and tunnel traffic to appropriate sandbox pods.  By integrating GKE Pod snapshots, these workloads can be paused and resumed by saving the full state of the container.
+## Vulnerability Remediation Workflow
 
-The sandbox implements a Default Deny network security posture for all sandboxed environments. This ensures that untrusted code executed inside a sandbox cannot access unauthorized internal networks or the GKE control plane by default. You can define specific network restrictions and allow egress or ingress rules within your SandboxTemplate to provide fine-grained security for specific workloads.
+## 🚀 Infrastructure Deployment
 
-A key feature of this system is the Claim Model that separates the user’s request for an environment (perhaps managed by a platform engineering team) from the specific implementation details.  It lets you request an environment without having to manage the underlying Pod or storage directly.   The request is managed using the SandboxClaim and SandboxTemplate CRDs. To minimize startup latency, a warm pool is used.  This feature allows the Agent Sandbox to provide execution environments in less then one second.  The feature is managed using the SandboxWarmPool CRD. 
 
-Google Cloud storage buckets are presented in the pods through a GCS Fuse mount to ease the input and output of source code and report data.  
+### 1. Configure Variables
 
-## ToDos
-
-Integrate agent sandbox router functionality to allow usage of the environment remotely via programmatic calls from a pipeline or command line. ( reference https://docs.cloud.google.com/kubernetes-engine/docs/how-to/agent-sandbox )
-
-## Prerequisites
-
-1.  **Google Cloud SDK (`gcloud`)** installed and authenticated.
-2.  **Terraform** (`>= 1.3.0`) installed.
-3.  A Google Cloud Project with billing enabled.
-
-*(Note: Local Docker and `envsubst` are **not** required; container images are built in the cloud via Google Cloud Build, and template substitution uses standard `sed`.)*
-
-## Deployment Instructions
-
-### 1. Configure Variables (`terraform.tfvars`)
-
-Copy the example variables file and set your `project_id`:
+Copy variables template file:
 
 ```bash
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
@@ -44,12 +30,11 @@ region      = "us-central1" # Optional, defaults to us-central1
 prefix      = "cm-sandbox"  # Optional, defaults to cm-sandbox
 target_repo = "https://github.com/thepawn1/cyber-homegym.git" # Optional, set to "none" to skip
 
-# Optional: VPC Service Controls Perimeter
+# Optional VPC Service Controls Perimeter for advanced users
 enable_vpc_sc    = false
 access_policy_id = "" # Set to numeric Access Policy ID if enable_vpc_sc is true
 ```
 
-*(Alternatively, you can export `PROJECT_ID` and `TARGET_REPO` as environment variables).*
 
 ### 2. Run the Deployment Script
 
@@ -61,7 +46,7 @@ The `deploy.sh` script automates the entire process:
 ./deploy.sh
 ```
 
-## Using Codemender
+## Codemender CLI in Agent Sandbox
 
 ### 1. Prepare Source Code
 By default, `deploy.sh` automatically stages the repository configured in `target_repo` into `/tmp` and uploads it to your GCS source bucket.
@@ -74,8 +59,8 @@ export SRC_BUCKET=$(terraform -chdir=terraform output -raw src_bucket_name)
 gcloud storage cp -r /path/to/your-repo/ "gs://${SRC_BUCKET}/" --project="${PROJECT_ID}"
 ```
 
-### 2. Connect to the Sandbox
-Drop into an interactive shell inside the secure, isolated gVisor sandbox. The container environment has the source bucket mounted at `/workspace/src` and the output bucket mounted at `/workspace/out`.
+### 2. Connect to the Agent Sandbox
+Drop into an interactive shell inside the secure, isolated Agent sandbox. The container environment has the source bucket mounted at `/workspace/src` and the output bucket mounted at `/workspace/out`.
 
 ```bash
 ./connect.sh

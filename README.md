@@ -1,10 +1,10 @@
 # Codemender GKE Agent Sandbox
 
-The foundation of this repository comes from Daniel Lee's repo(https://github.com/thepawn1/cm-gke-as) the moves to the next level of isolation when executing the Codemender binary in a Google Kubernetes Engine (GKE) Agent Sandbox. This sandbox architecture moves into the walk phase of isolating the Codemender service to safely detect vunerabilities in applications. If you want to start crawl phase repo using Google Compute Engine(https://github.com/jasonbisson/terraform-google-codemender) is straighforward and quick to ramp on the basics of the Codemender service.
+The foundation of this repository comes from [Daniel Lee's repo](https://github.com/thepawn1/cm-gke-as) that moves to the next level of isolation when executing the Codemender binary in a [Google Kubernetes Engine (GKE) Agent Sandbox](https://cloud.google.com/kubernetes-engine/docs/how-to/agent-sandbox). This sandbox architecture moves into the walk phase of isolating the Codemender service to safely detect vulnerabilities in applications. If you want to start with the crawl phase, the [repo using Google Compute Engine](https://github.com/jasonbisson/terraform-google-codemender) is straightforward and quick to ramp on the basics of the Codemender service.
 
 ## Features
 
-- GKE Autopilot with Agent Sandbox (gVisor feature enabled) for vunerability remediation 
+- GKE Autopilot with Agent Sandbox (gVisor feature enabled) for vulnerability remediation 
 - Private VPC and Private Google Access for Google APIs
 - Custom controller for lifecycle management of sandbox instances. 
 - Google Cloud Storage Fuse mount point for application and report sharing   

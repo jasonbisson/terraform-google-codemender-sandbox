@@ -49,7 +49,7 @@ The `deploy.sh` script automates the entire process:
 ## 🧪 Codemender CLI in Agent Sandbox
 
 ### 1. Prepare Source Code
-By default, `deploy.sh` automatically stages the repository configured in `target_repo` into `/tmp` and uploads it to your GCS source bucket.
+By default, `deploy.sh` automatically stages the repository configured in `target_repo` into `/tmp` and uploads it to a GCS source bucket.
 
 - **Custom Repository**: Change `target_repo` in `terraform/terraform.tfvars` or export `TARGET_REPO="https://github.com/..."`.
 - **Skip Auto-Staging**: Set `target_repo = "none"` in `terraform/terraform.tfvars`.

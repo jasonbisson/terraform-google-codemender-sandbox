@@ -46,7 +46,7 @@ The `deploy.sh` script automates the entire process:
 ./deploy.sh
 ```
 
-## Codemender CLI in Agent Sandbox
+## 🧪 Codemender CLI in Agent Sandbox
 
 ### 1. Prepare Source Code
 By default, `deploy.sh` automatically stages the repository configured in `target_repo` into `/tmp` and uploads it to your GCS source bucket.
@@ -102,7 +102,7 @@ export OUT_BUCKET=$(terraform -chdir=terraform output -raw out_bucket_name)
 gcloud storage cp -r "gs://${OUT_BUCKET}/*" ./reports/ --project="${PROJECT_ID}"
 ```
 
-## Clean Up
+## 🧹 Clean Up Resources
 
 To avoid incurring charges, destroy the infrastructure when finished:
 

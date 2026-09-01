@@ -1,0 +1,8 @@
+project_id  = "project_id where codemender is enabled"
+region      = "us-central1"
+prefix      = "cm-sandbox"
+target_repo = "https://github.com/thepawn1/cyber-homegym.git"
+
+# Optional: VPC Service Controls Perimeter
+enable_vpc_sc    = false
+access_policy_id = "" # Set to numeric Access Policy ID (e.g. "123456789012") if enable_vpc_sc is true

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: codemender-sa
+  namespace: default
+  annotations:
+    iam.gke.io/gcp-service-account: "cm-sandbox-sa@${PROJECT_ID}.iam.gserviceaccount.com"

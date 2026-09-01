@@ -1,0 +1,103 @@
+apiVersion: extensions.agents.x-k8s.io/v1alpha1
+kind: SandboxTemplate
+metadata:
+  name: codemender-template
+  namespace: default
+spec:
+  networkPolicyManagement: Unmanaged
+  podTemplate:
+    metadata:
+      labels:
+        sandbox-type: codemender-runtime
+      annotations:
+        gke-gcsfuse/volumes: "true"
+    spec:
+      # Set to false to comply with secure-sandbox-policy
+      automountServiceAccountToken: false
+      dnsPolicy: ClusterFirst
+      containers:
+      - args:
+        - |
+          # Initialize workspace if not already present
+          if [ ! -d "/home/codemender/.codemender" ]; then
+            cm init
+          fi
+          
+          # Apply custom configuration
+          if [ -f "/tmp/config/config.yaml" ]; then
+            cp /tmp/config/config.yaml /home/codemender/.codemender/config.yaml
+          fi
+
+          # Uncomment and configure project_paths in config.yaml
+          if grep -q "# *project_paths:" /home/codemender/.codemender/config.yaml; then
+            sed -i \
+              -e "s|^# *project_paths:|project_paths:|g" \
+              -e "s|^# *- \"/path/to/project\"|  - \"/workspace/src\"|g" \
+              /home/codemender/.codemender/config.yaml
+          elif ! grep -q "project_paths:" /home/codemender/.codemender/config.yaml; then
+            printf "\nproject_paths:\n  - \"/workspace/src\"\n" >> /home/codemender/.codemender/config.yaml
+          fi
+          
+          sleep infinity
+        command:
+        - /bin/sh
+        - -c
+        image: ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/cm-sandbox-repo/codemender-worker:latest 
+        name: codemender-worker
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /workspace
+          name: codemender-storage
+        - name: gcs-fuse-src
+          mountPath: /workspace/src
+        - name: gcs-fuse-out
+          mountPath: /workspace/out
+        - mountPath: /tmp/config
+          name: codemender-config
+      nodeSelector:
+        sandbox.gke.io/runtime: gvisor
+      restartPolicy: OnFailure
+      runtimeClassName: gvisor
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: codemender-sa
+      tolerations:
+      - effect: NoSchedule
+        key: sandbox.gke.io/runtime
+        value: gvisor
+      volumes:
+      - name: codemender-storage
+        persistentVolumeClaim:
+          claimName: codemender-pvc
+      - name: gcs-fuse-src
+        csi:
+          driver: gcsfuse.csi.storage.gke.io
+          volumeAttributes:
+            bucketName: ${SRC_BUCKET} 
+            mountOptions: "implicit-dirs"
+            skipCSIBucketAccessCheck: "true"
+      - name: gcs-fuse-out
+        csi:
+          driver: gcsfuse.csi.storage.gke.io
+          volumeAttributes:
+            bucketName: ${OUT_BUCKET} 
+            mountOptions: "implicit-dirs"
+            skipCSIBucketAccessCheck: "true"
+      - name: codemender-config
+        configMap:
+          name: codemender-config
+

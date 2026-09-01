@@ -1,0 +1,74 @@
+steps:
+  # 1. Build Codemender Worker Container Image
+  - id: 'build-worker-image'
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'k8s/Dockerfile', '-t', '$_IMAGE_NAME', '.']
+
+  # 2. Push Container Image to Artifact Registry
+  - id: 'push-worker-image'
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_IMAGE_NAME']
+
+  # 3. Deploy Kubernetes Manifests to GKE
+  - id: 'deploy-k8s-manifests'
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli'
+    entrypoint: 'bash'
+    env:
+      - 'LOCATION=$_LOCATION'
+      - 'PROJECT_ID=$PROJECT_ID'
+      - 'SRC_BUCKET=$_SRC_BUCKET'
+      - 'OUT_BUCKET=$_OUT_BUCKET'
+      - 'CLUSTER_NAME=$_CLUSTER_NAME'
+    args:
+      - '-c'
+      - |
+        set -e
+
+        echo "======================================"
+        echo "Fetching GKE Credentials"
+        echo "======================================"
+        gcloud container clusters get-credentials "$${CLUSTER_NAME}" --location="$${LOCATION}" --project="$${PROJECT_ID}"
+
+        echo "======================================"
+        echo "Deploying Kubernetes Manifests"
+        echo "======================================"
+
+        # Apply substituting env vars for the image repository and GCS buckets using standard sed
+        sed -e "s|\$${LOCATION}|$${LOCATION}|g" \
+            -e "s|\$${PROJECT_ID}|$${PROJECT_ID}|g" \
+            -e "s|\$${SRC_BUCKET}|$${SRC_BUCKET}|g" \
+            -e "s|\$${OUT_BUCKET}|$${OUT_BUCKET}|g" \
+            k8s/sandbox-template.yaml | kubectl apply -f -
+
+        # Also inject PROJECT_ID into rbac.yaml
+        sed -e "s|\$${PROJECT_ID}|$${PROJECT_ID}|g" \
+            k8s/rbac.yaml | kubectl apply -f -
+
+        kubectl apply -f k8s/network-policy.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/pvc.yaml
+        kubectl apply -f k8s/sandbox-warmpool.yaml
+
+        echo "Waiting for Warm Pool to create the sandbox..."
+        sleep 10
+        kubectl apply -f k8s/sandbox-claim.yaml
+
+        echo "======================================"
+        echo "Deployment Complete!"
+        echo "Check sandbox status with: kubectl get sandbox,pod"
+        echo "======================================"
+
+# Images to be pushed to Artifact Registry
+images:
+  - '$_IMAGE_NAME'
+
+substitutions:
+  _IMAGE_NAME: ''
+  _LOCATION: 'us-central1'
+  _SRC_BUCKET: ''
+  _OUT_BUCKET: ''
+  _CLUSTER_NAME: 'cm-sandbox-cluster'
+
+# Log to Cloud Logging directly (avoids requirement for a default GCS logs bucket)
+options:
+  logging: CLOUD_LOGGING_ONLY

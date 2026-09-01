@@ -1,0 +1,42 @@
+# Local .terraform directories
+**/.terraform/*
+
+# Local Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Exclude all generated execution plans
+*.tfplan
+tfplan
+plan.out
+.terraform.lock.hcl
+
+# Exclude sensitive variables and local override files
+terraform.tfvars
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Exclude service account credentials or private keys
+*.pem
+*.key
+*.json
+
+# Exclude PDF instruction documentation
+*.pdf
+
+# Ensure provider dependency locks and example configuration templates are tracked
+!.terraform.lock.hcl
+!terraform.tfvars.example
+
+# macOS and Editor metadata
+.DS_Store
+.idea/
+.vscode/
+*.swp
